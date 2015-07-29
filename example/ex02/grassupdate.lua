@@ -1,13 +1,16 @@
 function Raster:update( delta )
-   --io.write( "RASTER update " .. delta .. "\n" )
+   --io.write( "RASTER Grass update " .. delta .. "\n" )
    for j = 0, self.height - 1 do
       for i = 0, self.width - 1 do
+
          newval = self:getpixel( 0, i, j ) + 1
          if newval < 0 then
             newval = 0
+         elseif (mewval > 255) then
+            newval = 255
          end
-
          self:setpixel( 0, i, j, newval )
+         
       end
    end
 end

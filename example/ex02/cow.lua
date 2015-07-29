@@ -1,29 +1,35 @@
 -- AgentClass.outVariables( 'x', 'y' )
 
 function Agent:init()
+
    io.write( ">> Agent init\n" )
    self.x = 5 + math.random( 100 );
    self.y = 5 + math.random( 100 );
+   self.dir_x = 1;
+   self.dir_y = 1;
    self.dx = 1;
    self.dy = 1;
-   self.hungry = 50;
+   self.food = 50;
+
 end
 
 function Agent:update( delta )
 
-   --self:checkHill();
-
-   self:eatAndPoop();
+   -- Comprueba la capa de desnivel y se mueve si es posible
+   self:checkHill( delta );
+   -- Comprueba la capa de hierba y come en funcion de la cantidad de hierba y de lo que ha comido. Caga en funcion de lo que ha comido.
+   self:eatAndPoop( delta );
 
 end
 
-function Agent:checkHill()
+function Agent:checkHill( delta )
 
-   tempX = self.x + self.dx;
-   tempY = self.y + self.dy;
+   tempX = self.x + self.dir_x*self.dx*delta;
+   tempY = self.y + self.dir_y*self.dy*delta;
    local rstArea = raster.area;
    local area = rstArea:get( 0, tempX, tempY);
    io.write( "checkHill: (" .. tempX .. ',' .. tempY .. ') -> ' .. area .. '\n');
+
    if area > 0 then
       self.x = tempX;
       self.y = tempY;
@@ -31,27 +37,24 @@ function Agent:checkHill()
 
 end
 
-function Agent:eatAndPoop()
+function Agent:eatAndPoop( delta )
 
    local rstGrass = raster.grass;
    local grass = rstGrass:get( 0, self.x, self.y);
 
-   if (grass > 50 and self.hungry < 80) then
+   if (grass > 50 and self.food < 80) then
       grass = grass - 50;
-
       rstGrass:set( 0, self.x, self.y, grass );
-      self.hungry = self.hungry +10;
+      self.food = self.food +10;
    end
 
-   self.hungry = self.hungry - 1;
-   
-   io.write( "Grass: ".. grass .. " Hungry: " .. self.hungry .. '\n' );
+   self.food = self.food - 1; 
+   io.write( "Grass: ".. grass .. " food: " .. self.food .. '\n' );
 
-   if (self.hungry < 50) then
+   if (self.food > 50) then
       local rstManure = raster.manure;
       local manure = rstManure:get( 0, self.x, self.y);
       rstManure:set( 0, self.x, self.y, manure + 8 );
-
       io.write( "Poop!" .. '\n');
    end
 
