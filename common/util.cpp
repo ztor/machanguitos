@@ -60,17 +60,29 @@ namespace Util{
     }
 
     //--------------------------------------------------------------------------
+    /** Information about a raster file format.
+
+       @ingroup Util
+     */
     class DriverInfo{
     public:
+        /// name of the GDAL driver for the raster format.
         string driverName;
+        /// list of format file extensions.
         vector<string> driverExts;
     };
 
+    //--------------------------------------------------------------------------
+    /** Names of supported raster formats.
+
+       @ingroup Util
+     */
     const vector<DriverInfo> s_driverNames = {
         {"BMP", {".bmp",".dib"} },
         {"GIF", {".gif"} },
         {"JPEG", {".jpg", ".jpeg"} },
         {"PNG", {".png"} },
+        {"GTiff", {".tiff",".tif"}},
     };
 
     //--------------------------------------------------------------------------

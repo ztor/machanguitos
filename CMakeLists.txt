@@ -2,7 +2,7 @@ project(MACHANGUITOS)
 cmake_minimum_required(VERSION 2.6)
 set(MACHANGUITOS_VERSION_MAJOR 0)
 set(MACHANGUITOS_VERSION_MINOR 6)
-set(MACHANGUITOS_VERSION_RELEASE 0)
+set(MACHANGUITOS_VERSION_RELEASE 1)
 
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/Modules" )
 
@@ -26,6 +26,8 @@ if(CMAKE_COMPILER_IS_GNUCXX)
   set(CMAKE_CXX_FLAGS_DEBUG "-pedantic -g -O0" )
   set(CMAKE_CXX_FLAGS_RELEASE "-O3" )
   set(CMAKE_CXX_FLAGS_PROFILE "-O3 -pg" )
+
+  set(CMAKE_EXEC_LINKER_FLAGS_PROFILE "-pg" )
 else()
 #  message("compiler detected as: non-GNU compiler")
 endif()

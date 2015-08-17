@@ -1,4 +1,3 @@
-
 /*******************************************************************************
 Machanguitos is The Easiest Multi-Agent System in the world. Work done at The
 Institute of Physics of Cantabria (IFCA).
@@ -34,10 +33,14 @@ namespace Engine {
     using namespace Util;
 
     //--------------------------------------------------------------------------
+    /** Execute a Create Raster command.
+        @param src caller id.
+        @param w raster width.
+    */
     void runCreateRaster( int src, const int w ){
         char ckey[MAX_CLASS_NAME+1];
         MPI_Status status;
-        MPI_Recv( &ckey, MAX_CLASS_NAME, MPI_CHAR, src,
+        MPI_Recv( ckey, MAX_CLASS_NAME, MPI_CHAR, src,
                   MpiTagDS::CREATERASTER, MPI_COMM_WORLD, &status );
         if( status.MPI_ERROR != MPI_SUCCESS ){
             LOGE( "Received on data server" );
@@ -48,8 +51,8 @@ namespace Engine {
         MPI_Get_count( &status, MPI_CHAR, &count );
         ckey[count] = 0;
 
-        int32_t ival;
-        MPI_Recv( &ival, 1, MPI_INT, src,
+        int32_t ivals[3];
+        MPI_Recv( ivals, 3, MPI_INT, src,
                   MpiTagDS::CREATERASTER, MPI_COMM_WORLD, &status );
         if( status.MPI_ERROR != MPI_SUCCESS ){
             LOGE( "Received on data server" );
@@ -57,7 +60,7 @@ namespace Engine {
         }
 
         double dval[5];
-        MPI_Recv( &dval, 5, MPI_DOUBLE, src,
+        MPI_Recv( dval, 5, MPI_DOUBLE, src,
                   MpiTagDS::CREATERASTER, MPI_COMM_WORLD, &status );
         if( status.MPI_ERROR != MPI_SUCCESS ){
             LOGE( "Received on data server" );
@@ -65,14 +68,19 @@ namespace Engine {
         }
 
         auto && ds = Engine::DataServer::instance();
-        ds->createRaster( ckey, w, ival, dval[0], dval[1], dval[2], dval[3], dval[4] );
+        ds->createRaster( ckey, ivals[1], w, ivals[0], dval[0], dval[1],
+                          dval[2], dval[3], dval[4], ivals[2] );
     }
 
     //--------------------------------------------------------------------------
+    /** Execute a Get Raster Value command.
+        @param src caller id.
+        @param layer layer to use.
+    */
     void runGetRasterValue( int src, const int layer ){
         char ckey[MAX_CLASS_NAME+1];
         MPI_Status status;
-        MPI_Recv( &ckey, MAX_CLASS_NAME, MPI_CHAR, src,
+        MPI_Recv( ckey, MAX_CLASS_NAME, MPI_CHAR, src,
                   MpiTagDS::GETRASTERVALUE, MPI_COMM_WORLD, &status );
         if( status.MPI_ERROR != MPI_SUCCESS ){
             LOGE( "Received on data server" );
@@ -84,7 +92,7 @@ namespace Engine {
         ckey[count] = 0;
 
         double dval[2];
-        MPI_Recv( &dval, 2, MPI_DOUBLE, src,
+        MPI_Recv( dval, 2, MPI_DOUBLE, src,
                   MpiTagDS::GETRASTERVALUE, MPI_COMM_WORLD, &status );
         if( status.MPI_ERROR != MPI_SUCCESS ){
             LOGE( "Received on data server" );
@@ -105,10 +113,14 @@ namespace Engine {
     }
 
     //--------------------------------------------------------------------------
+    /** Execute a Set Raster Value command.
+        @param src caller id.
+        @param layer layer to use.
+    */
     void runSetRasterValue( int src, const int layer ){
         char ckey[MAX_CLASS_NAME+1];
         MPI_Status status;
-        MPI_Recv( &ckey, MAX_CLASS_NAME, MPI_CHAR, src,
+        MPI_Recv( ckey, MAX_CLASS_NAME, MPI_CHAR, src,
                   MpiTagDS::SETRASTERVALUE, MPI_COMM_WORLD, &status );
         if( status.MPI_ERROR != MPI_SUCCESS ){
             LOGE( "Received on data server" );
@@ -120,7 +132,7 @@ namespace Engine {
         ckey[count] = 0;
 
         double dval[3];
-        MPI_Recv( &dval, 3, MPI_DOUBLE, src,
+        MPI_Recv( dval, 3, MPI_DOUBLE, src,
                   MpiTagDS::SETRASTERVALUE, MPI_COMM_WORLD, &status );
         if( status.MPI_ERROR != MPI_SUCCESS ){
             LOGE( "Received on data server" );
@@ -135,10 +147,47 @@ namespace Engine {
     }
 
     //--------------------------------------------------------------------------
+    /** Execute a Increment Raster Value command.
+        @param src caller id.
+        @param layer layer to use.
+    */
+    void runIncRasterValue( int src, const int layer ){
+        char ckey[MAX_CLASS_NAME+1];
+        MPI_Status status;
+        MPI_Recv( ckey, MAX_CLASS_NAME, MPI_CHAR, src,
+                  MpiTagDS::INCRASTERVALUE, MPI_COMM_WORLD, &status );
+        if( status.MPI_ERROR != MPI_SUCCESS ){
+            LOGE( "Received on data server" );
+            Engine::abort();
+        }
+
+        int count;
+        MPI_Get_count( &status, MPI_CHAR, &count );
+        ckey[count] = 0;
+
+        double dval[3];
+        MPI_Recv( dval, 3, MPI_DOUBLE, src,
+                  MpiTagDS::INCRASTERVALUE, MPI_COMM_WORLD, &status );
+        if( status.MPI_ERROR != MPI_SUCCESS ){
+            LOGE( "Received on data server" );
+            Engine::abort();
+        }
+
+        auto && ds = Engine::DataServer::instance();
+        auto && raster = ds->getRaster( ckey );
+        if( raster ){
+            raster->incrementValue( layer, dval[0], dval[1], dval[2] );
+        }
+    }
+
+    //--------------------------------------------------------------------------
+    /** Execute a Save Raster command.
+        @param src caller id.
+    */
     void runSaveRaster( int src ){
         char ckey[MAX_CLASS_NAME+1];
         MPI_Status status;
-        MPI_Recv( &ckey, MAX_CLASS_NAME, MPI_CHAR, src,
+        MPI_Recv( ckey, MAX_CLASS_NAME, MPI_CHAR, src,
                   MpiTagDS::SAVERASTER, MPI_COMM_WORLD, &status );
         if( status.MPI_ERROR != MPI_SUCCESS ){
             LOGE( "Received on data server" );
@@ -150,7 +199,7 @@ namespace Engine {
         ckey[count] = 0;
 
         char cfilename[MAX_PATH_NAME+1];
-        MPI_Recv( &cfilename, MAX_PATH_NAME, MPI_CHAR, src,
+        MPI_Recv( cfilename, MAX_PATH_NAME, MPI_CHAR, src,
                   MpiTagDS::SAVERASTER, MPI_COMM_WORLD, &status );
         if( status.MPI_ERROR != MPI_SUCCESS ){
             LOGE( "Received on data server" );
@@ -170,10 +219,13 @@ namespace Engine {
     }
 
     //--------------------------------------------------------------------------
+    /** Execute a Load Raster command.
+        @param src caller id.
+    */
     void runLoadRaster( int src ){
         char ckey[MAX_CLASS_NAME+1];
         MPI_Status status;
-        MPI_Recv( &ckey, MAX_CLASS_NAME, MPI_CHAR, src,
+        MPI_Recv( ckey, MAX_CLASS_NAME, MPI_CHAR, src,
                   MpiTagDS::LOADRASTER, MPI_COMM_WORLD, &status );
         if( status.MPI_ERROR != MPI_SUCCESS ){
             LOGE( "Received on data server" );
@@ -185,7 +237,7 @@ namespace Engine {
         ckey[count] = 0;
 
         char cfilename[MAX_PATH_NAME+1];
-        MPI_Recv( &cfilename, MAX_PATH_NAME, MPI_CHAR, src,
+        MPI_Recv( cfilename, MAX_PATH_NAME, MPI_CHAR, src,
                   MpiTagDS::LOADRASTER, MPI_COMM_WORLD, &status );
         if( status.MPI_ERROR != MPI_SUCCESS ){
             LOGE( "Received on data server" );
@@ -196,7 +248,7 @@ namespace Engine {
         cfilename[count] = 0;
 
         double dval[4];
-        MPI_Recv( &dval, 4, MPI_DOUBLE, src,
+        MPI_Recv( dval, 4, MPI_DOUBLE, src,
                   MpiTagDS::LOADRASTER, MPI_COMM_WORLD, &status );
         if( status.MPI_ERROR != MPI_SUCCESS ){
             LOGE( "Received on data server" );
@@ -208,10 +260,13 @@ namespace Engine {
     }
 
     //--------------------------------------------------------------------------
+    /** Execute a Set Raster Update command.
+        @param src caller id.
+    */
     void runSetRasterUpdate( int src ){
         char ckey[MAX_CLASS_NAME+1];
         MPI_Status status;
-        MPI_Recv( &ckey, MAX_CLASS_NAME, MPI_CHAR, src,
+        MPI_Recv( ckey, MAX_CLASS_NAME, MPI_CHAR, src,
                   MpiTagDS::SETRASTERUPDATE, MPI_COMM_WORLD, &status );
         if( status.MPI_ERROR != MPI_SUCCESS ){
             LOGE( "Received on data server" );
@@ -223,7 +278,7 @@ namespace Engine {
         ckey[count] = 0;
 
         char cfilename[MAX_PATH_NAME+1];
-        MPI_Recv( &cfilename, MAX_PATH_NAME, MPI_CHAR, src,
+        MPI_Recv( cfilename, MAX_PATH_NAME, MPI_CHAR, src,
                   MpiTagDS::SETRASTERUPDATE, MPI_COMM_WORLD, &status );
         if( status.MPI_ERROR != MPI_SUCCESS ){
             LOGE( "Received on data server" );
@@ -238,6 +293,9 @@ namespace Engine {
     }
 
     //--------------------------------------------------------------------------
+    /** Execute a Update Layers command.
+        @param src caller id.
+    */
     void runUpdateLayers( int src ){
         double val;
         MPI_Status status;
@@ -250,6 +308,10 @@ namespace Engine {
 
         auto ds = Engine::DataServer::instance();
         ds->updateLayers( val );
+
+        int ok = true;
+
+        MPI_Send( &ok, 1, MPI_INT, src, MpiTagDS::UPDATELAYERS, MPI_COMM_WORLD );
     }
 
     //--------------------------------------------------------------------------
@@ -270,6 +332,10 @@ namespace Engine {
 
         case MpiTagDS::SETRASTERVALUE:
             runSetRasterValue( src, val );
+            break;
+
+        case MpiTagDS::INCRASTERVALUE:
+            runIncRasterValue( src, val );
             break;
 
         case MpiTagDS::SAVERASTER:

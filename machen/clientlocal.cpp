@@ -52,7 +52,8 @@ namespace Engine{
         auto && ds = Engine::DataServer::instance();
         switch( nr.rasterType ){
         case Data::RasterNewType::RNT_EMPTY:
-            ds->createRasterProxy( nr.key, nr.w, nr.h, nr.x0, nr.x1, nr.y0, nr.y1, nr.d );
+            ds->createRasterProxy( nr.key, nr.layers, nr.w, nr.h,
+                                   nr.x0, nr.x1, nr.y0, nr.y1, nr.d, nr.isFloat );
             break;
 
         case Data::RasterNewType::RNT_FILE:
@@ -64,6 +65,10 @@ namespace Engine{
     //--------------------------------------------------------------------------
     bool ClientLocal::createClass( const string & name ){
         auto agentClass = Agent::AgentFactory::instance()->createClass( name );
+        if( agentClass ){
+            std::uniform_real_distribution<> dis;
+            agentClass->setRandomSeed( dis(m_gen) );
+        }
         return (agentClass != nullptr);
     }
 
@@ -96,7 +101,7 @@ namespace Engine{
 
         m_totalTime += delta;
 
-        auto db = IO::DataStore::instance();
+        auto db = Data::DataStore::instance();
 
         if( db->connect() ){
             for( auto & obj: m_objects ){

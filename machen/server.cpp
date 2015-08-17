@@ -64,13 +64,14 @@ namespace Engine{
     }
 
     //--------------------------------------------------------------------------
-    void Server::createRaster( const string & key, int w, int h,
-                               double x0, double x1, double y0, double y1, double d ){
+    void Server::createRaster( const string & key, int l, int w, int h,
+                               double x0, double x1, double y0, double y1,
+                               double d, bool isFloat ){
         if( key.length() > MAX_CLASS_NAME ){
             LOGW( "Raster name '", key, "' too long" );
         }else{
             LOGI( "Creating raster named '", key, "'" );
-            m_newRaster.emplace_front( key, w, h, x0, x1, y0, y1, d );
+            m_newRaster.emplace_front( key, l, w, h, x0, x1, y0, y1, d, isFloat );
         }
     }
 
@@ -145,9 +146,9 @@ namespace Engine{
         initializeScript();
         createClients();
 
-        auto db = IO::DataStore::instance();
-        auto host = getConfigString( "dbhost", IO::DataStore::DEFAULT_HOSTNAME );
-        auto port = getConfigInt( "dbport", IO::DataStore::DEFAULT_PORT );
+        auto db = Data::DataStore::instance();
+        auto host = getConfigString( "dbhost", Data::DataStore::DEFAULT_HOSTNAME );
+        auto port = getConfigInt( "dbport", Data::DataStore::DEFAULT_PORT );
         db->setDataStoreHost( host );
         db->setDataStorePort( port );
 
@@ -160,14 +161,20 @@ namespace Engine{
 
         auto startt = getConfigNumber( "starttime", 0 );
 
+        auto randomseed = getConfigNumber( "randomseed", 0 );
+
         auto ll = getLogLevel();
         auto datadir = getDataDir();
         remoteSetLogLevel( ll );
         remoteSetDataDir( datadir );
         remoteSetDataStore( name, host, port );
 
+        std::mt19937 gen( randomseed );
+        std::uniform_int_distribution<int32_t> dis;
+
         for( auto && c: m_clients ){
             c->setStartTime( startt );
+            c->setRandomSeed( dis(gen) );
 
             for( auto && nr: m_newRaster ){
                 c->createRaster( nr );
@@ -178,7 +185,9 @@ namespace Engine{
         for( const auto nr: m_newRaster ){
             switch( nr.rasterType ){
             case Data::RasterNewType::RNT_EMPTY:
-                ds->createRaster( nr.key, nr.w, nr.h, nr.x0, nr.x1, nr.y0, nr.y1, nr.d );
+                ds->createRaster( nr.key, nr.layers, nr.w, nr.h,
+                                  nr.x0, nr.x1, nr.y0, nr.y1,
+                                  nr.d, nr.isFloat );
                 break;
 
             case Data::RasterNewType::RNT_FILE:

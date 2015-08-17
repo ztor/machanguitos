@@ -38,6 +38,11 @@ namespace Data {
     using namespace Util;
 
     //--------------------------------------------------------------------------
+    /** Define the pixel getter of Raster data.
+        @param L lua_State.
+        @ingroup Data
+        @retval 0 No return values to Lua.
+     */
     int rastergdal_getpixel( lua_State *L ){
         auto l = luaL_checknumber( L, -3 );
         auto x = luaL_checknumber( L, -2 );
@@ -59,6 +64,11 @@ namespace Data {
     }
 
     //--------------------------------------------------------------------------
+    /** Define the pixel setter of Raster data.
+        @param L lua_State.
+        @ingroup Data
+        @retval 0 No return values to Lua.
+     */
     int rastergdal_setpixel( lua_State *L ){
         auto l = luaL_checknumber( L, -4 );
         auto x = luaL_checknumber( L, -3 );
@@ -79,25 +89,47 @@ namespace Data {
     }
 
     //--------------------------------------------------------------------------
-    RasterGDAL::RasterGDAL( const string & key, int w, int h, double x0, double x1, double y0, double y1, double d )
-        : Raster{key, w, h, x0, x1, y0, y1, d }
+    /** Define the load of Raster data.
+        @param L lua_State.
+        @ingroup Data
+        @retval 0 No return values to Lua.
+     */
+    int rastergdal_load( lua_State *L ){
+        auto filename = luaL_checkstring( L, -1 );
+
+        lua_getfield( L, -2, SCRIPT_RASTER_OBJ );           // 1
+        if( lua_islightuserdata( L, -1 ) ){
+            auto raster = static_cast<Data::Raster*>( lua_touserdata( L, -1 ) );
+            lua_pop( L, 1 );                                // 0
+            if( raster ){
+                raster->loadImage( filename );
+            }else{
+                luaL_error( L, "Invalid raster object" );
+            }
+        }
+        return 0;
+    }
+
+    //--------------------------------------------------------------------------
+    RasterGDAL::RasterGDAL( const string & key, int layers, int w, int h,
+                            double x0, double x1, double y0, double y1,
+                            double d, bool isFloat )
+        : Raster{key, layers, w, h, x0, x1, y0, y1, d, isFloat }
     {
         auto driver = GetGDALDriverManager()->GetDriverByName( "MEM" );
 
-        m_data = driver->Create( "", w, h, 1, GDT_Byte,  nullptr );
+        auto datatype = isFloat ? GDT_Float32 : GDT_Byte;
+
+        m_data = driver->Create( "", w, h, layers, datatype, nullptr );
         if( ! m_data ){
             LOGE( "ERROR Creating data" );
             terminate();
         }
 
-        auto rasterBand = m_data->GetRasterBand( 1 );
-        if( rasterBand ){
-            uint8_t pixel = d;
-            for( int j = 0 ; j < h ; ++j ){
-                for( int i = 0 ; i < w ; ++i ){
-                    rasterBand->RasterIO( GF_Write, i, j, 1, 1,
-                                          &pixel, 1, 1, GDT_Byte, 0, 0 );
-                }
+        for( auto l = 0 ; l < layers ; ++l ){
+            auto rasterBand = m_data->GetRasterBand( l+1 );
+            if( rasterBand ){
+                rasterBand->Fill( d );
             }
         }
     }
@@ -105,7 +137,7 @@ namespace Data {
     //--------------------------------------------------------------------------
     RasterGDAL::RasterGDAL( const string & key, const string & filename,
                             double x0, double x1, double y0, double y1 )
-        : Raster{key, 1, 1, x0, x1, y0, y1, 0.0 }
+        : Raster{key, 1, 1, 1, x0, x1, y0, y1, 0.0, false }
     {
         auto dir = Engine::getDataDir();
         path fullpath = path(dir) /= filename;
@@ -123,6 +155,8 @@ namespace Data {
 
         m_w = m_data->GetRasterXSize();
         m_h = m_data->GetRasterYSize();
+
+        m_layers = m_data->GetRasterCount();
     }
 
     //--------------------------------------------------------------------------
@@ -273,6 +307,92 @@ namespace Data {
     }
 
     //--------------------------------------------------------------------------
+    void RasterGDAL::incrementValue( int layer, double x, double y, double val ){
+        auto rasterBand = m_data->GetRasterBand( layer + 1 );
+        if( rasterBand ){
+            auto pos = getPosition( x, y );
+            auto i = get<0>(pos);
+            auto j = get<1>(pos);
+            auto isize = rasterBand->GetXSize();
+            auto jsize = rasterBand->GetYSize();
+            if( i < 0 or i >= isize or j < 0 or j >= jsize ){
+                LOGD( "Out-of-range position set( ", x, ", ", y, " )" );
+                return;
+            }
+
+            auto datatype = rasterBand->GetRasterDataType();
+            uint8_t pixel_byte;
+            uint16_t pixel_uint16;
+            int16_t pixel_int16;
+            uint32_t pixel_uint32;
+            int32_t pixel_int32;
+            float pixel_float32;
+
+
+            switch( datatype ){
+            case GDT_Byte:
+                rasterBand->RasterIO( GF_Read, i, j, 1, 1,
+                                      &pixel_byte, 1, 1, datatype, 0, 0 );
+                pixel_byte += val;
+                rasterBand->RasterIO( GF_Write, i, j, 1, 1,
+                                      &pixel_byte, 1, 1, datatype, 0, 0 );
+                break;
+
+            case GDT_UInt16:
+                rasterBand->RasterIO( GF_Read, i, j, 1, 1,
+                                      &pixel_uint16, 1, 1, datatype, 0, 0 );
+
+                pixel_uint16 += val;
+                rasterBand->RasterIO( GF_Write, i, j, 1, 1,
+                                      &pixel_uint16, 1, 1, datatype, 0, 0 );
+                break;
+
+            case GDT_Int16:
+                rasterBand->RasterIO( GF_Read, i, j, 1, 1,
+                                      &pixel_int16, 1, 1, datatype, 0, 0 );
+
+                pixel_int16 += val;
+                rasterBand->RasterIO( GF_Write, i, j, 1, 1,
+                                      &pixel_int16, 1, 1, datatype, 0, 0 );
+                break;
+
+            case GDT_UInt32:
+                rasterBand->RasterIO( GF_Read, i, j, 1, 1,
+                                      &pixel_uint32, 1, 1, datatype, 0, 0 );
+
+                pixel_uint32 += val;
+                rasterBand->RasterIO( GF_Write, i, j, 1, 1,
+                                      &pixel_uint32, 1, 1, datatype, 0, 0 );
+                break;
+
+            case GDT_Int32:
+                rasterBand->RasterIO( GF_Read, i, j, 1, 1,
+                                      &pixel_int32, 1, 1, datatype, 0, 0 );
+
+                pixel_int32 += val;
+                rasterBand->RasterIO( GF_Write, i, j, 1, 1,
+                                      &pixel_int32, 1, 1, datatype, 0, 0 );
+                break;
+
+            case GDT_Float32:
+                rasterBand->RasterIO( GF_Read, i, j, 1, 1,
+                                      &pixel_float32, 1, 1, datatype, 0, 0 );
+
+                pixel_float32 += val;
+                rasterBand->RasterIO( GF_Write, i, j, 1, 1,
+                                      &pixel_float32, 1, 1, datatype, 0, 0 );
+                break;
+
+            default:
+                LOGE( "Raster Unknown type" );
+                break;
+            }
+        }else{
+            LOGE( "Invalid raster layer ", layer );
+        }
+    }
+
+    //--------------------------------------------------------------------------
     double RasterGDAL::getPixelValue( int layer, int i, int j ){
         auto rasterBand = m_data->GetRasterBand( layer + 1 );
         if( rasterBand ){
@@ -409,6 +529,49 @@ namespace Data {
     }
 
     //--------------------------------------------------------------------------
+    void RasterGDAL::loadImage( const std::string & filename ){
+        auto dir = Engine::getDataDir();
+        path fullpath = path(dir) /= filename;
+
+        if( !is_regular_file(fullpath) ){
+            LOGE( "Not file for raster '", fullpath, "'" );
+            terminate();
+        }
+
+        auto dataset = static_cast<GDALDataset*>( GDALOpen( fullpath.c_str(), GA_ReadOnly ) );
+        if( ! dataset ){
+            LOGE( "ERROR Loading data" );
+            terminate();
+        }
+
+        if( m_data ){
+            GDALClose( m_data );
+        }
+
+        m_data = dataset;
+
+        m_w = m_data->GetRasterXSize();
+        m_h = m_data->GetRasterYSize();
+
+        m_layers = m_data->GetRasterCount();
+
+        // update lua members
+        if( m_L ){
+            lua_getfield( m_L, LUA_GLOBALSINDEX, SCRIPT_RASTER_NAME ); // 1
+            lua_pushstring( m_L, "width");                             // 2
+            lua_pushnumber( m_L, m_h );                                // 3
+            lua_settable( m_L, -3 );                                   // 1
+            lua_pushstring( m_L, "height");                            // 2
+            lua_pushnumber( m_L, m_w );                                // 3
+            lua_settable( m_L, -3 );                                   // 1
+            lua_pushstring( m_L, "layers");                            // 2
+            lua_pushnumber( m_L, m_layers );                           // 3
+            lua_settable( m_L, -3 );                                   // 1
+            lua_pop( m_L, 1 );                                         // 0
+        }
+    }
+
+    //--------------------------------------------------------------------------
     void RasterGDAL::save( const string & filename ){
         auto type = getGDALDriverName( filename );
         if( type ){
@@ -469,11 +632,17 @@ namespace Data {
         lua_pushstring( m_L, "setpixel");                          // 2
         lua_pushcfunction( m_L, rastergdal_setpixel );             // 3
         lua_settable( m_L, -3 );                                   // 1
+        lua_pushstring( m_L, "load");                              // 2
+        lua_pushcfunction( m_L, rastergdal_load );                 // 3
+        lua_settable( m_L, -3 );                                   // 1
         lua_pushstring( m_L, "width");                             // 2
         lua_pushnumber( m_L, m_h );                                // 3
         lua_settable( m_L, -3 );                                   // 1
         lua_pushstring( m_L, "height");                            // 2
         lua_pushnumber( m_L, m_w );                                // 3
+        lua_settable( m_L, -3 );                                   // 1
+        lua_pushstring( m_L, "layers");                            // 2
+        lua_pushnumber( m_L, m_layers );                           // 3
         lua_settable( m_L, -3 );                                   // 1
         lua_pop( m_L, 1 );                                         // 0
     }

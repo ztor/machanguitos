@@ -65,11 +65,17 @@ namespace Engine{
     }
 
     //--------------------------------------------------------------------------
+    void ClientRemote::setRandomSeed( const int32_t seed ){
+        int32_t val{seed};
+        MPI_Send( &val, 1, MPI_INT, m_dest, MpiTagCS::SETRANDOMSEED, MPI_COMM_WORLD );
+    }
+
+    //--------------------------------------------------------------------------
     void ClientRemote::createRaster( const Data::RasterNewData & raster ){
         Util::LOGD( "ClientRemote::createRaster ", raster.key );
         assert( raster.key.length() <= MAX_CLASS_NAME && "name too long" );
         int32_t val{raster.w};
-        int32_t ival{raster.h};
+        int32_t ivals[]{raster.h,raster.layers,raster.isFloat};
         double dvals[]{raster.x0, raster.x1, raster.y0, raster.y1, raster.d};
         char * ckey = new char [raster.key.length()+1];
         strcpy( ckey, raster.key.c_str() );
@@ -79,7 +85,7 @@ namespace Engine{
             MPI_Send( &val, 1, MPI_INT, m_dest, MpiTagCS::CREATERASTERCLIENT, MPI_COMM_WORLD );
             MPI_Send( ckey, raster.key.length(), MPI_CHAR, m_dest,
                       MpiTagCS::CREATERASTERCLIENT, MPI_COMM_WORLD );
-            MPI_Send( &ival, 1, MPI_INT, m_dest, MpiTagCS::CREATERASTERCLIENT, MPI_COMM_WORLD );
+            MPI_Send( ivals, 3, MPI_INT, m_dest, MpiTagCS::CREATERASTERCLIENT, MPI_COMM_WORLD );
             MPI_Send( dvals, 5, MPI_DOUBLE, m_dest,
                       MpiTagCS::CREATERASTERCLIENT, MPI_COMM_WORLD );
             break;

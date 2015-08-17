@@ -61,6 +61,11 @@ namespace Engine{
             runSetStartTime( src );
             break;
 
+        case MpiTagCS::SETRANDOMSEED:
+            Util::LOGD( "Set client ", m_rank, " seed ", val );
+            m_local->setRandomSeed( val );
+            break;
+
         case MpiTagCS::CREATERASTERCLIENT:
             runCreateRasterClient( src, val );
             break;
@@ -93,7 +98,7 @@ namespace Engine{
     void MPIClientServer::runCreateClass( int src ){
         char val[MAX_CLASS_NAME+1];
         MPI_Status status;
-        MPI_Recv( &val, MAX_CLASS_NAME, MPI_CHAR, src,
+        MPI_Recv( val, MAX_CLASS_NAME, MPI_CHAR, src,
                   MpiTagCS::CREATECLASS, MPI_COMM_WORLD, &status );
         if( status.MPI_ERROR != MPI_SUCCESS ){
             LOGE( "Received on ", m_rank );
@@ -113,7 +118,7 @@ namespace Engine{
     void MPIClientServer::runCreateAgents( int src, const int num ){
         char val[MAX_CLASS_NAME+1];
         MPI_Status status;
-        MPI_Recv( &val, MAX_CLASS_NAME, MPI_CHAR, src,
+        MPI_Recv( val, MAX_CLASS_NAME, MPI_CHAR, src,
                   MpiTagCS::CREATEAGENTS, MPI_COMM_WORLD, &status );
         if( status.MPI_ERROR != MPI_SUCCESS ){
             LOGE( "Received on ", m_rank );
@@ -147,7 +152,7 @@ namespace Engine{
     void MPIClientServer::runCreateRasterClient( int src, const int w ){
         char ckey[MAX_CLASS_NAME+1];
         MPI_Status status;
-        MPI_Recv( &ckey, MAX_CLASS_NAME, MPI_CHAR, src,
+        MPI_Recv( ckey, MAX_CLASS_NAME, MPI_CHAR, src,
                   MpiTagCS::CREATERASTERCLIENT, MPI_COMM_WORLD, &status );
         if( status.MPI_ERROR != MPI_SUCCESS ){
             LOGE( "Received on ", m_rank );
@@ -158,8 +163,8 @@ namespace Engine{
         MPI_Get_count( &status, MPI_CHAR, &count );
         ckey[count] = 0;
 
-        int32_t ival;
-        MPI_Recv( &ival, 1, MPI_INT, src,
+        int32_t ivals[3];
+        MPI_Recv( ivals, 3, MPI_INT, src,
                   MpiTagCS::CREATERASTERCLIENT, MPI_COMM_WORLD, &status );
         if( status.MPI_ERROR != MPI_SUCCESS ){
             LOGE( "Received on ", m_rank );
@@ -167,7 +172,7 @@ namespace Engine{
         }
 
         double dval[5];
-        MPI_Recv( &dval, 5, MPI_DOUBLE, src,
+        MPI_Recv( dval, 5, MPI_DOUBLE, src,
                   MpiTagCS::CREATERASTERCLIENT, MPI_COMM_WORLD, &status );
         if( status.MPI_ERROR != MPI_SUCCESS ){
             LOGE( "Received on ", m_rank );
@@ -175,14 +180,15 @@ namespace Engine{
         }
 
         auto && ds = Engine::DataServer::instance();
-        ds->createRasterProxy( ckey, w, ival, dval[0], dval[1], dval[2], dval[3], dval[4] );
+        ds->createRasterProxy( ckey, ivals[1], w, ivals[0],
+                               dval[0], dval[1], dval[2], dval[3], dval[4], ivals[2] );
     }
 
     //--------------------------------------------------------------------------
     void MPIClientServer::runLoadRasterClient( int src ){
         char ckey[MAX_CLASS_NAME+1];
         MPI_Status status;
-        MPI_Recv( &ckey, MAX_CLASS_NAME, MPI_CHAR, src,
+        MPI_Recv( ckey, MAX_CLASS_NAME, MPI_CHAR, src,
                   MpiTagCS::LOADRASTERCLIENT, MPI_COMM_WORLD, &status );
         if( status.MPI_ERROR != MPI_SUCCESS ){
             LOGE( "Received on ", m_rank );
@@ -194,7 +200,7 @@ namespace Engine{
         ckey[count] = 0;
 
         char cfilename[MAX_PATH_NAME+1];
-        MPI_Recv( &cfilename, MAX_PATH_NAME, MPI_CHAR, src,
+        MPI_Recv( cfilename, MAX_PATH_NAME, MPI_CHAR, src,
                   MpiTagCS::LOADRASTERCLIENT, MPI_COMM_WORLD, &status );
         if( status.MPI_ERROR != MPI_SUCCESS ){
             LOGE( "Received on data server" );
@@ -205,7 +211,7 @@ namespace Engine{
         cfilename[count] = 0;
 
         double dval[4];
-        MPI_Recv( &dval, 4, MPI_DOUBLE, src,
+        MPI_Recv( dval, 4, MPI_DOUBLE, src,
                   MpiTagCS::LOADRASTERCLIENT, MPI_COMM_WORLD, &status );
         if( status.MPI_ERROR != MPI_SUCCESS ){
             LOGE( "Received on ", m_rank );
