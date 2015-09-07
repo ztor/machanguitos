@@ -1,5 +1,5 @@
 function initialize()
-   io.write( "Cow Example\n" )
+   io.write( "CdP Example\n" )
    io.write( " Machen " .. config.VERSION_MAJOR .. "." .. config.VERSION_MINOR .. "\n" )
 
    config.setLogLevel( "info" )
@@ -62,6 +62,7 @@ function initialize()
    data.setLayerUpdate( "area", "areaupdate" )
 
    config.addAgent( "cow", 100 )
+   config.addAgent( "sheep", 100 )
 
    config.setvars( {
                       --dbhost = "localhost",
@@ -79,9 +80,11 @@ end
 
 function endIteration( num )
    io.write( "End iteration " .. num .. "\n" )
-   
 
-   -- raster.grass:save( "output"..num..".png" )
+   if num % 10 == 0 then
+    raster.manure:save( "export/output"..num..".png" )
+   end
+
 end
 
 function endSimulation()

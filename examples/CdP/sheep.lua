@@ -6,12 +6,14 @@ function Agent:init()
    self.y = 19 + math.random( 10 ) / 20.0
    --self.hungry = 50;
 
-   -- De media comen 5 veces menos que las vacas.
-   self.grassEated = (7+math.random( 15 ))/5;
+   -- Esta oveja come "grassEated" de media a cada paso
+   self.grassEated = 7 + math.random( 15 );
 
+   -- El 80 % de lo que se come se aprovecha, el 20% se gasta cuando la vaca se mueve y el 10% cuando esta durmiendo. El 40% pasa a ser abono.
+   self.grassToHungry = self.grassEated*0.8;
    self.grassToManure = self.grassEated*0.4;
 
-   io.write( 'init ' .. self.grassToManure .. '\n')
+   io.write( 'init ' ..  self.grassToHungry .. ' ' .. self.grassToManure .. '\n')
 end
 
 function Agent:update(delta)
@@ -29,8 +31,8 @@ function Agent:update(delta)
 end
 
 function Agent:checkHill(delta)
-   self.dx = (0.2 - math.random( 80 ) / 100.0)*delta;
-   self.dy = (0.2 - math.random( 80 ) / 100.0)*delta;
+   self.dx = (0.2 - math.random( 40 ) / 100.0)*delta;
+   self.dy = (0.2 - math.random( 40 ) / 100.0)*delta;
 
    tempX = self.x + self.dx;
    tempY = self.y + self.dy;
