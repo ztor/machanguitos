@@ -2,12 +2,11 @@
 
 function Agent:init()
    io.write( ">> Agent init\n" )
-   self.x = 1 + math.random( 18 )
-   self.y = 19 + math.random( 10 ) / 20.0
+   self.x = math.random( 20 )
+   self.y = math.random( 20 )
    --self.hungry = 50;
 
-   -- De media comen 5 veces menos que las vacas.
-   self.grassEated = (7+math.random( 15 ))/5;
+   self.grassEated = (7+math.random( 15 )) + 50;
 
    self.grassToManure = self.grassEated*0.4;
 
@@ -23,22 +22,38 @@ function Agent:update(delta)
       --self.hungry = self.hungry - (self.hungryPasive*delta);
    else
       self:checkHill(delta);
-      self:eatAndPoop(delta);
+      
    end
 
 end
 
 function Agent:checkHill(delta)
-   self.dx = (0.2 - math.random( 80 ) / 100.0)*delta;
-   self.dy = (0.2 - math.random( 80 ) / 100.0)*delta;
+   local randX = math.random();
+   local randY = math.random();
+   if (randX >= 0.5) then
+      self.dirX = 1;
+   else
+      self.dirX = -1;
+   end
+   if (randY >= 0.5) then
+      self.dirY = 1;
+   else
+      self.dirY = -1;
+   end
+
+   self.dx = self.dirX*((0.2 - math.random( 40 ) / 100.0)*delta);
+   self.dy = self.dirY*((0.2 - math.random( 40 ) / 100.0)*delta);
+
 
    tempX = self.x + self.dx;
    tempY = self.y + self.dy;
    local rstArea = raster.area;
    local area = rstArea:get( 0, tempX, tempY);
+   print(area)
    if area > 0 then
       self.x = tempX;
       self.y = tempY;
+      self:eatAndPoop(delta);
    end
 end
 
@@ -54,5 +69,5 @@ function Agent:eatAndPoop(delta)
    local rstManure = raster.manure;
    local inc = self.grassToManure * delta;
    rstManure:increment( 0, self.x, self.y, inc );
-   print('x: ' .. self.x .. ' y: ' .. self.y .. ' manure: ' .. inc )
+   --print('x: ' .. self.x .. ' y: ' .. self.y .. ' manure: ' .. inc )
 end

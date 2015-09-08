@@ -3,14 +3,13 @@
 function Agent:init()
    io.write( ">> Agent init\n" )
    self.x = 1 + math.random( 18 )
-   self.y = 19 + math.random( 10 ) / 20.0
+   self.y = 1 + math.random( 19 )
    --self.hungry = 50;
 
    -- Esta oveja come "grassEated" de media a cada paso
-   self.grassEated = 7 + math.random( 15 );
+   self.grassEated = (7 + math.random( 15 ))/5;
 
    -- El 80 % de lo que se come se aprovecha, el 20% se gasta cuando la vaca se mueve y el 10% cuando esta durmiendo. El 40% pasa a ser abono.
-   self.grassToHungry = self.grassEated*0.8;
    self.grassToManure = self.grassEated*0.4;
 
    io.write( 'init ' ..  self.grassToHungry .. ' ' .. self.grassToManure .. '\n')
@@ -25,7 +24,6 @@ function Agent:update(delta)
       --self.hungry = self.hungry - (self.hungryPasive*delta);
    else
       self:checkHill(delta);
-      self:eatAndPoop(delta);
    end
 
 end
@@ -38,9 +36,12 @@ function Agent:checkHill(delta)
    tempY = self.y + self.dy;
    local rstArea = raster.area;
    local area = rstArea:get( 0, tempX, tempY);
+
+
    if area > 0 then
       self.x = tempX;
       self.y = tempY;
+      self:eatAndPoop(delta);
    end
 end
 
@@ -56,5 +57,5 @@ function Agent:eatAndPoop(delta)
    local rstManure = raster.manure;
    local inc = self.grassToManure * delta;
    rstManure:increment( 0, self.x, self.y, inc );
-   print('x: ' .. self.x .. ' y: ' .. self.y .. ' manure: ' .. inc )
+   --print('x: ' .. self.x .. ' y: ' .. self.y .. ' manure: ' .. inc )
 end

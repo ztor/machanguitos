@@ -61,8 +61,8 @@ function initialize()
    
    data.setLayerUpdate( "area", "areaupdate" )
 
-   config.addAgent( "cow", 100 )
-   config.addAgent( "sheep", 100 )
+   config.addAgent( "cow", 1000 )
+   --config.addAgent( "sheep", 100 )
 
    config.setvars( {
                       --dbhost = "localhost",
