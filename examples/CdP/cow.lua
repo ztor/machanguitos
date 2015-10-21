@@ -4,11 +4,10 @@ function Agent:init()
    io.write( ">> Agent init\n" )
    self.x = math.random( 20 )
    self.y = math.random( 20 )
-   --self.hungry = 50;
 
-   self.grassEated = (7+math.random( 15 )) + 50;
+   self.grassEated = 100;
 
-   self.grassToManure = self.grassEated*0.4;
+   self.grassToManure = (60 + math.random( 5 ))*(10/(60*24)); -- 60 kg cada dia de estiercol
 
    io.write( 'init ' .. self.grassToManure .. '\n')
 end
@@ -53,6 +52,10 @@ function Agent:checkHill(delta)
    if area > 0 then
       self.x = tempX;
       self.y = tempY;
+
+      local rstPosition = raster.positions;
+      rstPosition:increment( 0, self.x, self.y, 200 );
+
       self:eatAndPoop(delta);
    end
 end
