@@ -46,4 +46,6 @@ function Raster:update( delta )
        self:load( "10-octubre.png" )
    end
 
+
+
 end

@@ -48,16 +48,12 @@ function Agent:checkHill(delta)
    tempY = self.y + self.dy;
    local rstArea = raster.area;
    local area = rstArea:get( 0, tempX, tempY);
-   print(area)
    if area > 0 then
       self.x = tempX;
       self.y = tempY;
-
-      local rstPosition = raster.positions;
-      rstPosition:increment( 0, self.x, self.y, 200 );
-
       self:eatAndPoop(delta);
    end
+
 end
 
 function Agent:eatAndPoop(delta)
@@ -71,6 +67,6 @@ function Agent:eatAndPoop(delta)
    --self.hungry = self.hungry - (self.hungryActive*delta);
    local rstManure = raster.manure;
    local inc = self.grassToManure * delta;
-   rstManure:increment( 0, self.x, self.y, inc );
+   rstManure:increment( 0, self.x, self.y, 200 );
    --print('x: ' .. self.x .. ' y: ' .. self.y .. ' manure: ' .. inc )
 end

@@ -20,7 +20,7 @@ data.setLayerUpdate("daily", "dayupdate")
 config.setvars({
 	starttime = 0.0,
 	endtime = 24 * 214,
-	iters = 144 * 214,
+	iters = 24*214,--144 * 214,
 	randomseed = 1,
 })
 
@@ -33,17 +33,6 @@ data.createLayer("grass",
         w = 700,
         h = 700,
         default = 250,
-    })
-
-data.createLayer("positions",
-    {
-        x0 = 0.0,
-        x1 = 20.0,
-        y0 = 0.0,
-        y1 = 20.0,
-        w = 700,
-        h = 700,
-        default = 0,
     })
 
 data.setLayerUpdate("grass", "grassupdate")
@@ -72,7 +61,7 @@ data.loadLayer("area", "4-abril.png",
 
 data.setLayerUpdate("area", "areaupdate")
 
-config.addAgent("cow", 6300)
+config.addAgent("cow", 100)
 --config.addAgent("sheep", 10200)
 
 end
@@ -84,7 +73,7 @@ end
 function endIteration(num)
 io.write("End iteration " ..num .. "\n")
 
-if num % 100 == 0 then
+if num % 30 == 0 then
 --http://gifmaker.me/
 raster.manure:save("export/output"..num..".png")
 end
