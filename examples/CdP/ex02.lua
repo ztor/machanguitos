@@ -20,7 +20,7 @@ data.setLayerUpdate("daily", "dayupdate")
 config.setvars({
 	starttime = 0.0,
 	endtime = 24 * 214,
-	iters = 24*214,--144 * 214,
+	iters = 144 * 214,
 	randomseed = 1,
 })
 
@@ -61,7 +61,7 @@ data.loadLayer("area", "4-abril.png",
 
 data.setLayerUpdate("area", "areaupdate")
 
-config.addAgent("cow", 100)
+config.addAgent("cow", 6300)
 --config.addAgent("sheep", 10200)
 
 end
